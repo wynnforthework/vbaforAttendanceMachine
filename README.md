@@ -1,0 +1,2 @@
+# vbaforAttendanceMachine
+ 考勤机导出的excel用vba一键转换成按人名一人一行排列，标注周末
