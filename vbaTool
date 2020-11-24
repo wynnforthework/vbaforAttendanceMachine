@@ -1,0 +1,130 @@
+Const swsb = #10:00:00 AM#
+Const xwxb = #7:00:00 PM#
+Private Sub kaoqin_click()
+On Error GoTo Err_Handle
+    Dim question As String
+    Dim myButtons As Integer
+    Dim myTitle As String
+    Dim myChoice As Integer
+    Dim mySheetName As String
+    
+    question = "这张是需要整理的表吗？"
+    myButtons = vbYesNo + vbQuestion + vbDefaultButton2
+    myTitle = "一键考勤"
+    myChoice = MsgBox(question, myButtons, myTitle)
+    If myChoice = 6 Then
+
+        Dim Arr, i&, swks, swjs, xwks, xwjs, Brr, k1, t1, x$, y, y1, y2
+        Dim d, k, t, j&, p&, n&, bm, aa
+        Dim r%, sw(), rr%, xw(), zz, zc, zz1, zc1
+        Dim cc, cd, zt, qq
+        Set d = CreateObject("Scripting.Dictionary")
+        Set e = CreateObject("Scripting.Dictionary")
+        ssbyxks = swsb: ssbyxjs = swsb + 0.5 / 24 '上午上班有效考勤记录时间
+        xxbyxks = xwxb - 0.5 / 24: xxbyxjs = xwxb + 0.25  '下午下班有效考勤记录时间
+        
+        Arr = ActiveSheet.[a1].CurrentRegion
+        ReDim Brr(1 To UBound(Arr), 1 To 4)
+        For i = 2 To UBound(Arr)
+            x = Arr(i, 2)
+            y1 = FormatDateTime(Arr(i, 4), 5)
+            y2 = FormatDateTime(Arr(i, 4), 4)
+            If d.exists(x) = False Then Set d(x) = CreateObject("Scripting.Dictionary")
+            d(x)(y1) = d(x)(y1) & y2 & ","
+            e(y1) = ""
+        Next
+        k = d.keys
+        t = d.items
+        ReDim Crr(1 To UBound(Arr), 1 To 4)
+        For i = 0 To UBound(k)
+            k1 = t(i).keys: t1 = t(i).items
+            'For m = 0 To UBound(k1)
+                'Debug.Print k1(m)
+            'Next
+            'For m = 0 To UBound(t1)
+                'Debug.Print t1(m)
+            'Next
+            
+            For j = 0 To UBound(k1)
+                n = n + 1: r = 0: rr = 0
+                Brr(n, 1) = k(i)
+                Brr(n, 2) = k1(j)
+                t1(j) = Left(t1(j), Len(t1(j)) - 1)
+                
+                If InStr(t1(j), ",") Then
+                    aa = Split(t1(j), ",")
+                    Brr(n, 3) = aa(0)
+                    Brr(n, 4) = aa(UBound(aa))
+                Else
+                    aa = t1(j)
+                    If DateDiff("n", aa, xwxb) < 0 Then
+                        Brr(n, 3) = "忘打卡"
+                        Brr(n, 4) = aa
+                    Else
+                        Brr(n, 3) = aa
+                        Brr(n, 4) = "忘打卡"
+                    End If
+                End If
+            Next
+        Next
+        ActiveWorkbook.Sheets.Add after:=Worksheets(1)
+        Worksheets(2).[a1].ColumnWidth = 22
+        'Worksheets(2).Name = "一键考勤"
+        'Worksheets("一键考勤").[a2].Resize(n, 4) = Brr
+        Dim ee, f
+        ee = funPaiXu(e.keys)
+        'Worksheets(2).ClearContents
+        '第一行显示名字
+        'Worksheets(2).[b1].Resize(1, UBound(k)) = k
+        
+        Set g = CreateObject("Scripting.Dictionary")
+        Dim h, o
+        For m = 0 To UBound(ee)
+            f = ee(m)
+            Worksheets(2).Cells(3 + m * 2, 1) = Month(f) & "月" & Day(f) & "日"
+            If Weekday(f) = 1 Then
+                Worksheets(2).Cells(3 + m * 2, 1).Font.ColorIndex = 3
+            End If
+            If Weekday(f) = 7 Then
+                Worksheets(2).Cells(3 + m * 2, 1).Font.ColorIndex = 3
+            End If
+            For n = 1 To UBound(Brr)
+                h = Brr(n, 1)
+                
+                If Not g.exists(Brr(n, 1)) Then
+                    o = UBound(g.keys)
+                    g(h) = o + 1
+                    Worksheets(2).Cells(1, 2 + g(h)) = Brr(n, 1)
+                    Worksheets(2).Cells(1, 2 + g(h)).Font.Bold = True
+                End If
+                If DateDiff("d", f, Brr(n, 2)) = 0 Then
+                    Worksheets(2).Cells(3 + m * 2, 2 + g(h)) = Brr(n, 3)
+                    Worksheets(2).Cells(4 + m * 2, 2 + g(h)) = Brr(n, 4)
+                End If
+            Next
+        Next
+        ActiveSheet.UsedRange.HorizontalAlignment = Excel.xlCenter
+        ActiveSheet.UsedRange.Borders.LineStyle = xlContinuous
+    End If
+Err_Handle:
+    Debug.Print Err.Description
+    'MsgBox ("表错了")
+End Sub
+
+Public Function funPaiXu(Arr As Variant)
+Dim MaxV As Variant, i As Integer, j As Integer, a As Integer, b As Integer
+a = UBound(Arr) - 1
+b = a
+For i = a To 0 Step -1
+    MaxV = Arr(i)    '取最后一个数
+    For j = 0 To b    '通过循环，将最小数放在本次循环内数组最后
+        If DateDiff("d", MaxV, Arr(j)) > 0 Then  '本函数结果是由大到小排序，如果由小到大，改“<”为“>”
+            MaxV = Arr(j)
+            Arr(j) = Arr(i)
+            Arr(i) = MaxV
+        End If
+    Next j
+    b = b - 1    '下次比较截止到数组倒数第二个元素，依次递减
+Next i
+funPaiXu = Arr
+End Function
